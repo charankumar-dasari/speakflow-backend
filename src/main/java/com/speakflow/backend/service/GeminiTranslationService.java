@@ -26,43 +26,65 @@ public class GeminiTranslationService {
 
     public String translateToEnglish(String originalText) {
 
-        String prompt = """
-                You are SpeakFlow, a speech-to-English translation engine.
+        if (originalText == null || originalText.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Speech text cannot be empty"
+            );
+        }
 
-                Convert the user's speech into natural, clear English.
+        String prompt = """
+                You are SpeakFlow, a professional speech-to-English translation engine.
+
+                Translate the user's speech into natural, clear English.
 
                 Rules:
-                1. Detect the language automatically.
-                2. The input may contain Telugu, Hindi, Kannada,
-                   Tamil, Malayalam, English, or mixed languages.
-                3. If the input is mixed-language speech,
-                   understand the complete meaning and convert it
-                   into natural English.
-                4. Do not explain the translation.
-                5. Do not add quotation marks.
-                6. Return ONLY the final English sentence.
-                7. Preserve the original meaning.
-                8. Correct obvious speech-recognition mistakes
-                   when the intended meaning is clear.
+                1. Detect the input language automatically.
+                2. The input can be Telugu, Hindi, Kannada, Tamil,
+                   Malayalam, English, or mixed languages.
+                3. Understand the complete meaning of the speech.
+                4. Translate all non-English content into natural English.
+                5. Keep existing English content natural.
+                6. Correct obvious speech-recognition mistakes when the meaning is clear.
+                7. Do not explain anything.
+                8. Do not add quotation marks.
+                9. Return ONLY the final English sentence.
+                10. Preserve the original meaning.
 
                 User speech:
                 """ + originalText;
 
-        GenerateContentResponse response =
-                client.models.generateContent(
-                        "gemini-3.6-flash",
-                        prompt,
-                        null
+        try {
+
+            GenerateContentResponse response =
+                    client.models.generateContent(
+                            "gemini-2.5-flash",
+                            prompt,
+                            null
+                    );
+
+            String result = response.text();
+
+            if (result == null || result.isBlank()) {
+                throw new RuntimeException(
+                        "Gemini returned an empty translation"
                 );
+            }
 
-        String result = response.text();
+            return result.trim();
 
-        if (result == null || result.isBlank()) {
+        } catch (Exception e) {
+
+            System.err.println(
+                    "❌ Gemini translation error: "
+                            + e.getMessage()
+            );
+
+            e.printStackTrace();
+
             throw new RuntimeException(
-                    "Gemini returned an empty translation"
+                    "Gemini translation failed",
+                    e
             );
         }
-
-        return result.trim();
     }
 }
